@@ -118,7 +118,6 @@
       mcnLayer.clearLayers();
     }
 
-    // NEW: remove any lingering tooltips
     function clearAllTooltips() {
       map.eachLayer(layer => {
         if (layer instanceof L.Tooltip) {
@@ -128,7 +127,7 @@
     }
 
     function clearAllSelections(resetView = false) {
-      clearAllTooltips();              // ← remove orphaned tooltips on Escape
+      clearAllTooltips();
       highlightLayer.clearLayers();
       lsoaHighlightLayer.clearLayers();
       clearMCNLayer();
@@ -167,7 +166,7 @@
 
     function attachPCHandlers(feature, layer) {
       layer.defaultStyle = {
-        color: 'black', weight: 0.5, fillOpacity: 1,
+        color: 'white', weight: 1, fillOpacity: 1,
         fillColor: baseColors[feature.properties.has_mcn]
       };
       layer.setStyle(layer.defaultStyle);
@@ -178,7 +177,7 @@
       layer.on('mouseover', e => {
         tooltip.setLatLng(e.latlng).addTo(map);
         layer.setStyle({
-          weight: 1, color: '#000',
+          weight: 1, color: 'white',
           fillColor: highlightColors[feature.properties.has_mcn]
         });
       });
@@ -199,7 +198,10 @@
 
     function attachMCNHandlers(feature, layer) {
       layer.defaultStyle = {
-        color: 'black', weight: 2, fillColor: '#FF4A47', fillOpacity: 1
+        color: 'black',    // <-- always black boundary
+        weight: 2, 
+        fillColor: '#FF4A47',
+        fillOpacity: 1
       };
       layer.setStyle(layer.defaultStyle);
 
@@ -208,7 +210,11 @@
 
       layer.on('mouseover', e => {
         tooltip.setLatLng(e.latlng).addTo(map);
-        layer.setStyle({ weight: 2, color: 'black', fillColor: '#FF9B99' });
+        layer.setStyle({
+          weight: 2, 
+          color: 'black',       // <-- keep boundary black on hover
+          fillColor: '#FF9B99'
+        });
       });
       layer.on('mousemove', e => tooltip.setLatLng(e.latlng));
       layer.on('mouseout', () => {
@@ -219,27 +225,27 @@
     }
 
     // Legend control
-	  const LegendControl = L.Control.extend({
-	  options: { position: 'topright' },
-	  onAdd: function(map) {
-		const div = L.DomUtil.create('div','leaflet-control-legend');
-		div.innerHTML = `
-		  <div class="legend-item">
-			<span class="legend-swatch" style="background:${baseColors[1]}"></span>
-			<span>Has MCN</span>
-		  </div>
-		  <div class="legend-item">
-			<span class="legend-swatch" style="background:${baseColors[0]}"></span>
-			<span>No MCN</span>
-		  </div>
-		  <div class="legend-item">
-			<span class="legend-swatch" style="background:#FF4A47"></span>
-			<span>MCN</span>
-		  </div>
-		`;
-		return div;
-	  }
-	  });
+    const LegendControl = L.Control.extend({
+      options: { position: 'topright' },
+      onAdd: function(map) {
+        const div = L.DomUtil.create('div','leaflet-control-legend');
+        div.innerHTML = `
+          <div class="legend-item">
+            <span class="legend-swatch" style="background:${baseColors[1]}"></span>
+            <span>Has MCN</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-swatch" style="background:${baseColors[0]}"></span>
+            <span>No MCN</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-swatch" style="background:#FF4A47"></span>
+            <span>MCN</span>
+          </div>
+        `;
+        return div;
+      }
+    });
 
     // Initialization
     function setupKeyHandler() {
@@ -274,13 +280,18 @@
 
       highlightLayer = L.geoJSON(null, {
         style: f => ({
-          color: 'black', weight: 1, fillOpacity: 1,
+          color: 'white', weight: 1, fillOpacity: 1,
           fillColor: highlightColors[f.properties.has_mcn]
         })
       }).addTo(map);
 
       lsoaHighlightLayer = L.geoJSON(null, {
-        style: { color: 'black', weight: 2, fillColor: '#FF9B99', fillOpacity: 1 }
+        style: { 
+          color: 'black',      // <-- always black boundary 
+          weight: 2, 
+          fillColor: '#FF9B99', 
+          fillOpacity: 1 
+        }
       }).addTo(map);
 
       mcnLayer = L.geoJSON(null, {
