@@ -198,8 +198,8 @@
 
     function attachMCNHandlers(feature, layer) {
       layer.defaultStyle = {
-        color: 'black',    // <-- always black boundary
-        weight: 2, 
+        color: 'black',   
+        weight: 1, 
         fillColor: '#FF4A47',
         fillOpacity: 1
       };
@@ -211,8 +211,8 @@
       layer.on('mouseover', e => {
         tooltip.setLatLng(e.latlng).addTo(map);
         layer.setStyle({
-          weight: 2, 
-          color: 'black',       // <-- keep boundary black on hover
+          weight: 1, 
+          color: 'black',       
           fillColor: '#FF9B99'
         });
       });
@@ -287,8 +287,8 @@
 
       lsoaHighlightLayer = L.geoJSON(null, {
         style: { 
-          color: 'black',      // <-- always black boundary 
-          weight: 2, 
+          color: 'black',      
+          weight: 1, 
           fillColor: '#FF9B99', 
           fillOpacity: 1 
         }
