@@ -67,8 +67,8 @@
     let selectedConstituencyName = '';
     let lsoaSelected = false;
     const metadataDiv = document.getElementById('metadata');
-    const baseColors = { 1: '#FBFF1F', 0: '#D3D9D3' };
-    const highlightColors = { 1: '#FEFFC2', 0: '#E9ECE9' };
+    const baseColors = { 1: '#103a5e', 0: '#D3D9D3' };
+    const highlightColors = { 1: '#009a9e', 0: '#E9ECE9' };
 
     // Utility functions
     function formatScore(value) {
@@ -199,7 +199,7 @@
 
     function attachMCNHandlers(feature, layer) {
       layer.defaultStyle = {
-        color: 'black', weight: 2, fillColor: '#3C91E6', fillOpacity: 1
+        color: 'black', weight: 2, fillColor: '#FF4A47', fillOpacity: 1
       };
       layer.setStyle(layer.defaultStyle);
 
@@ -208,7 +208,7 @@
 
       layer.on('mouseover', e => {
         tooltip.setLatLng(e.latlng).addTo(map);
-        layer.setStyle({ weight: 2, color: 'black', fillColor: '#B7D6F6' });
+        layer.setStyle({ weight: 2, color: 'black', fillColor: '#FF9B99' });
       });
       layer.on('mousemove', e => tooltip.setLatLng(e.latlng));
       layer.on('mouseout', () => {
@@ -276,7 +276,7 @@
       }).addTo(map);
 
       lsoaHighlightLayer = L.geoJSON(null, {
-        style: { color: 'black', weight: 2, fillColor: '#B7D6F6', fillOpacity: 1 }
+        style: { color: 'black', weight: 2, fillColor: '#FF9B99', fillOpacity: 1 }
       }).addTo(map);
 
       mcnLayer = L.geoJSON(null, {
