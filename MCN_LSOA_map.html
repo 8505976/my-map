@@ -233,7 +233,9 @@
         map.removeLayer(tooltip);
         layer.setStyle(layer.defaultStyle);
       });
-      layer.on('click', () => onPCClick(feature, layer));
+          if (feature.properties.has_mcn) {
+		layer.on('click', () => onPCClick(feature, layer));
+    }
     }
 
     function onMCNClick(feature, layer) {
