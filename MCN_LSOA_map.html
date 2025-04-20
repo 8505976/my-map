@@ -76,13 +76,14 @@
 		  pointer-events: none;
 		}
 
-		/* 5. Legend control  */
+		/* 5. Legend control — just switch from shorthand to inherit */
 		.leaflet-control-legend {
 		  background: white;
 		  padding: 6px 8px;
+		  /* remove the old `font: 14px Arial...` and split font-size + family */
 		  font-size: 14px;
 		  font-family: inherit;
-		  color: black;      
+		  color: black;       /* optional if you want legend text in the same blue */
 		  box-shadow: 0 0 15px rgba(0,0,0,0.2);
 		  border-radius: 5px;
 		  line-height: 1.4;
@@ -188,6 +189,8 @@
 
     // Feature handlers
     function onPCClick(feature, layer) {
+	  if (!feature.properties.has_mcn) return;
+	
       const code = feature.properties.PCON24CD;
       const matches = mcnData.features.filter(d => d.properties.PCON25CD === code);
 
@@ -233,9 +236,18 @@
         map.removeLayer(tooltip);
         layer.setStyle(layer.defaultStyle);
       });
-          if (feature.properties.has_mcn) {
-		layer.on('click', () => onPCClick(feature, layer));
+        if (feature.properties.has_mcn) {
+			layer.on('click', () => onPCClick(feature, layer));
     }
+		if (!feature.properties.has_mcn) {
+		  layer.on('click', e => {
+			e.originalEvent.stopPropagation();
+			// immediately put the tooltip back
+			tooltip
+			  .setLatLng(e.latlng)
+			  .addTo(map);
+		  });
+		}
     }
 
     function onMCNClick(feature, layer) {
