@@ -219,23 +219,27 @@
     }
 
     // Legend control
-    const LegendControl = L.Control.extend({
-      options: { position: 'topright' },
-      onAdd: function(map) {
-        const div = L.DomUtil.create('div','leaflet-control-legend');
-        div.innerHTML = `
-          <div class="legend-item">
-            <span class="legend-swatch" style="background:${baseColors[1]}"></span>
-            <span>Has MCN</span>
-          </div>
-          <div class="legend-item">
-            <span class="legend-swatch" style="background:${baseColors[0]}"></span>
-            <span>No MCN</span>
-          </div>
-        `;
-        return div;
-      }
-    });
+	  const LegendControl = L.Control.extend({
+	  options: { position: 'topright' },
+	  onAdd: function(map) {
+		const div = L.DomUtil.create('div','leaflet-control-legend');
+		div.innerHTML = `
+		  <div class="legend-item">
+			<span class="legend-swatch" style="background:${baseColors[1]}"></span>
+			<span>Has MCN</span>
+		  </div>
+		  <div class="legend-item">
+			<span class="legend-swatch" style="background:${baseColors[0]}"></span>
+			<span>No MCN</span>
+		  </div>
+		  <div class="legend-item">
+			<span class="legend-swatch" style="background:#FF4A47"></span>
+			<span>MCN</span>
+		  </div>
+		`;
+		return div;
+	  }
+	  });
 
     // Initialization
     function setupKeyHandler() {
