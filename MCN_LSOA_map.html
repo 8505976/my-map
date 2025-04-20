@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Interactive PCs & MCN LSOAs — Unified Metadata Box</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+	<style>
+	  html, body {
+		height: 100%;
+		margin: 0;
+		padding: 0;
+	  }
+
+	  #map {
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+	  }
+
+	  #metadata {
+		position: absolute;
+		bottom: 10px;
+		left: 10px;
+		background: rgba(255,255,255,0.9);
+		border: 1px solid #333;
+		padding: 15px 20px;
+		border-radius: 4px;
+		font-size: clamp(20px, 3vw, 25px);  /* ✅ Responsive, replaces scale */
+		box-shadow: 0 0 6px rgba(0,0,0,0.3);
+		z-index: 1000;
+		pointer-events: auto;
+
+		max-height: 30vw;
+		max-width: 80vw;
+		overflow-x: auto;     /* ✅ Scroll if needed */
+		white-space: normal;  /* ✅ Allow wrapping instead of overflow */
+	  }
+
+	  #metadata table {
+		border-collapse: collapse;
+		margin-top: 6px;
+		width: 100%;
+	  }
+
+	  #metadata th,
+	  #metadata td {
+		padding: 2px 8px;
+		border: 1px solid #666;
+		text-align: center;
+	  }
+
+	  #metadata th {
+		background: #eee;
+	  }
+
+	  .leaflet-tooltip-custom {
+		background: rgba(255,255,255,0.95);
+		border: 1px solid #333;
+		padding: 8px 16px;
+		font-size: clamp(16px, 2vw, 24px);
+		border-radius: 4px;
+		pointer-events: none;
+	  }
+	</style>
+</head>
+<body>
+  <div id="map"></div>
+  <div id="metadata"></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    let selectedConstituencyName = '';
+    let lsoaSelected = false;
+    const metadataDiv = document.getElementById("metadata");
+	function formatScore(value) {
+	  const num = parseFloat(value);
+	  return isNaN(num) ? '' : num.toFixed(2);
+	}
+    function updateMetadataTable(properties) {
+      metadataDiv.innerHTML = '';
+
+      const lsoaName = properties["LSOA (2021) name"];
+
+      const header = document.createElement("div");
+      header.innerHTML = `<strong>${selectedConstituencyName}</strong><br><em>${lsoaName}</em>`;
+      metadataDiv.appendChild(header);
+
+      const metadataMap = [
+        ["Hyper local need measure", "Hyper-local need measure score (where higher score = higher need)", "Hyper-local need measure Rank (where 1 = highest need)"],
+        ["Kickstart economic growth", "Kickstart economic growth Score (where higher score = higher need)", "Kickstart economic growth Rank (where 1 = highest need)"],
+        ["Make Britain a clean energy superpower", "Make Britain a clean energy superpower Score (where higher score = higher need)", "Make Britain a clean energy superpower Rank (where 1 = highest need)"],
+        ["Take back our streets", "Take back our streets Score (where higher score = higher need)", "Take back our streets Rank (where 1 = highest need)"],
+        ["Break down barriers to opportunity", "Break down barriers to opportunity Score (where higher score = higher need)", "Break down barriers to opportunity Rank (where 1 = highest need)"],
+        ["Build an NHS fit for the future", "Build an NHS fit for the future Score (where higher score = higher need)", "Build an NHS fit for the future Rank (where 1 = highest need)"]
+      ];
+
+      const table = document.createElement("table");
+      const thead = document.createElement("thead");
+      const headerRow = document.createElement("tr");
+      headerRow.innerHTML = `<th></th><th>Score</th><th>Rank</th>`;
+      thead.appendChild(headerRow);
+      table.appendChild(thead);
+
+      const tbody = document.createElement("tbody");
+      metadataMap.forEach(([label, scoreKey, rankKey]) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <th>${label}</th>
+          <td>${formatScore(properties[scoreKey])}</td>
+          <td>${properties[rankKey] ?? ''}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      table.appendChild(tbody);
+      metadataDiv.appendChild(table);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const map = L.map('map', {
+        maxBounds: [[47, -20], [60, 12]],
+        maxBoundsViscosity: 1.0,
+        minZoom: 7,
+        maxZoom: 18
+      }).setView([53.5, -1.5], 7);
+
+      L.tileLayer(
+        'https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png',
+        { subdomains: 'abcd', attribution: '&copy; OSM &copy; CARTO' }
+      ).addTo(map);
+
+      const baseColors = { 1: '#FBFF1F', 0: '#D3D9D3' };
+      const highlightColors = { 1: '#FEFFC2', 0: '#E9ECE9' };
+
+      let pcLayer, highlightLayer, mcnLayer, lsoaHighlightLayer, mcnData;
+
+      Promise.all([
+        fetch('PCs_Eng_2025.geojson').then(r => r.json()),
+        fetch('MCN_LSOAs.geojson').then(r => r.json())
+      ]).then(([pcData, mcns]) => {
+        mcnData = mcns;
+
+        pcLayer = L.geoJSON(pcData, {
+          style: f => ({
+            color: 'black', weight: 0.5, fillOpacity: 1,
+            fillColor: baseColors[f.properties.has_mcn]
+          }),
+          onEachFeature: (f, lyr) => {
+            lyr.defaultStyle = {
+              color: 'black', weight: 0.5, fillOpacity: 1,
+              fillColor: baseColors[f.properties.has_mcn]
+            };
+            lyr.setStyle(lyr.defaultStyle);
+
+            const name = f.properties.PCON24NM;
+            const tooltip = L.tooltip({ direction: 'top', className: 'leaflet-tooltip-custom' }).setContent(name);
+
+            lyr.on('mouseover', e => {
+              tooltip.setLatLng(e.latlng).addTo(map);
+              lyr.setStyle({ weight: 1, color: '#000', fillColor: highlightColors[f.properties.has_mcn] });
+            });
+            lyr.on('mousemove', e => tooltip.setLatLng(e.latlng));
+            lyr.on('mouseout', () => {
+              map.removeLayer(tooltip);
+              lyr.setStyle(lyr.defaultStyle);
+            });
+            lyr.on('click', () => {
+              selectedConstituencyName = name;
+              highlightLayer.clearLayers();
+              lsoaHighlightLayer.clearLayers();
+              metadataDiv.innerHTML = `<strong>${selectedConstituencyName}</strong>`;
+              lsoaSelected = false;
+              highlightLayer.addData(f);
+              const code = f.properties.PCON24CD;
+              const matches = mcnData.features.filter(d => d.properties.PCON25CD === code);
+              mcnLayer.clearLayers();
+              if (matches.length) {
+                mcnLayer.addData({ type: 'FeatureCollection', features: matches });
+              }
+              map.fitBounds(lyr.getBounds(), { padding: [30, 30], animate: true, duration: 0.75 });
+            });
+          }
+        }).addTo(map);
+
+        highlightLayer = L.geoJSON(null, {
+          style: f => ({
+            color: 'black', weight: 1, fillOpacity: 1,
+            fillColor: highlightColors[f.properties.has_mcn]
+          })
+        }).addTo(map);
+
+        lsoaHighlightLayer = L.geoJSON(null, {
+          style: { color: 'black', weight: 2, fillColor: '#B7D6F6', fillOpacity: 1 }
+        }).addTo(map);
+
+        mcnLayer = L.geoJSON(null, {
+          style: { color: 'black', weight: 2, fillColor: '#3C91E6', fillOpacity: 1 },
+          onEachFeature: (feature, layer) => {
+            layer.defaultStyle = { color: 'black', weight: 2, fillColor: '#3C91E6', fillOpacity: 1 };
+            layer.setStyle(layer.defaultStyle);
+
+            const name = feature.properties["LSOA (2021) name"];
+            const tooltip = L.tooltip({ direction: 'top', className: 'leaflet-tooltip-custom' }).setContent(name);
+
+            layer.on('mouseover', e => {
+              tooltip.setLatLng(e.latlng).addTo(map);
+              layer.setStyle({ weight: 2, color: 'black', fillColor: '#B7D6F6' });
+            });
+            layer.on('mousemove', e => tooltip.setLatLng(e.latlng));
+            layer.on('mouseout', () => {
+              map.removeLayer(tooltip);
+              layer.setStyle(layer.defaultStyle);
+            });
+            layer.on('click', () => {
+              lsoaHighlightLayer.clearLayers();
+              lsoaHighlightLayer.addData(feature);
+              lsoaSelected = true;
+              updateMetadataTable(feature.properties);
+            });
+          }
+        }).addTo(map);
+      });
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          if (lsoaSelected) {
+            lsoaHighlightLayer.clearLayers();
+            metadataDiv.innerHTML = `<strong>${selectedConstituencyName}</strong>`;
+            lsoaSelected = false;
+          } else if (selectedConstituencyName) {
+            highlightLayer.clearLayers();
+            lsoaHighlightLayer.clearLayers();
+            mcnLayer.clearLayers();
+            metadataDiv.innerHTML = '';
+            selectedConstituencyName = '';
+			map.flyTo([53.5, -1.5], 7, { duration: 0.25 });
+          }
+        }
+      });
+    });
+  </script>
+</body>
+</html>
