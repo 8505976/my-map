@@ -129,6 +129,8 @@
     const metadataDiv = document.getElementById('metadata');
     const baseColors = { 1: '#103a5e', 0: '#DADDD8' };
     const highlightColors = { 1: '#009a9e', 0: '#EAECE9' };
+	const isTouchDevice = window.matchMedia('(hover: none)').matches;
+
 
     // Format helper
     function formatScore(v) {
@@ -222,20 +224,46 @@
     }
 
     // PC click
-    function onPCClick(f, layer) {
-      if (!f.properties.has_mcn) return;
-      clearAllSelections();
-      selectedConstituencyName = f.properties.PCON24NM;
-      renderPCMetadata();
+	function onPCClick(feature, layer) {
+	  clearAllSelections();
 
-      const matches = mcnData.features.filter(d => d.properties.PCON25CD === f.properties.PCON24CD);
-      highlightLayer.addData(f);
-      if (matches.length) {
-        mcnLayer.addData({ type: 'FeatureCollection', features: matches });
-        mcnLayer.bringToFront();
-      }
-      map.fitBounds(layer.getBounds(), { padding:[30,30], animate:true, duration:0.75 });
-    }
+	  selectedConstituencyName = feature.properties.PCON24NM;
+
+	  // Highlight selected constituency no matter what
+	  highlightLayer.addData(feature);
+
+	  if (feature.properties.has_mcn) {
+		// This is an MCN-having constituency
+		renderPCMetadata();
+
+		const code = feature.properties.PCON24CD;
+		const matches = mcnData.features.filter(d => d.properties.PCON25CD === code);
+
+		if (matches.length) {
+		  mcnLayer.addData({ type: 'FeatureCollection', features: matches });
+		  mcnLayer.bringToFront();
+		}
+
+		map.fitBounds(layer.getBounds(), { padding: [30, 30], animate: true, duration: 0.75 });
+	  } else {
+		// This is a non-MCN constituency — show a message
+		metadataDiv.innerHTML = '';
+
+		const closeBtn = document.createElement('button');
+		closeBtn.className = 'metadata-close-btn';
+		closeBtn.innerHTML = '&times;';
+		closeBtn.addEventListener('click', () => {
+		  clearAllSelections(true);
+		});
+		metadataDiv.appendChild(closeBtn);
+
+		const header = document.createElement('div');
+		header.innerHTML =
+		  `<strong>${selectedConstituencyName}</strong><br>` +
+		  `<em>Select a constituency with MCNs</em>`;
+		metadataDiv.appendChild(header);
+	  }
+	}
 
     // MCN click
     function onMCNClick(f) {
@@ -246,41 +274,59 @@
     }
 
     // Handlers attachers
-    function attachPCHandlers(f, layer) {
-      layer.defaultStyle = {
-        color:'white', weight:1, fillOpacity:1,
-        fillColor: baseColors[f.properties.has_mcn]
-      };
-      layer.setStyle(layer.defaultStyle);
-      const tip = L.tooltip({ direction:'top', className:'leaflet-tooltip-custom' })
-                   .setContent(f.properties.PCON24NM);
-      layer.on('mouseover', e => {
-        tip.setLatLng(e.latlng).addTo(map);
-        layer.setStyle({ ...layer.defaultStyle, fillColor: highlightColors[f.properties.has_mcn] });
-      });
-      layer.on('mousemove', e => tip.setLatLng(e.latlng));
-      layer.on('mouseout', () => {
-        map.removeLayer(tip);
-        layer.setStyle(layer.defaultStyle);
-      });
-      layer.on('click', () => onPCClick(f, layer));
-    }
-    function attachMCNHandlers(f, layer) {
-      layer.defaultStyle = { color:'black', weight:1, fillColor:'#FF4A47', fillOpacity:1 };
-      layer.setStyle(layer.defaultStyle);
-      const tip = L.tooltip({ direction:'top', className:'leaflet-tooltip-custom' })
-                   .setContent(f.properties["LSOA (2021) name"]);
-      layer.on('mouseover', e => {
-        tip.setLatLng(e.latlng).addTo(map);
-        layer.setStyle({ ...layer.defaultStyle, fillColor:'#FF9B99' });
-      });
-      layer.on('mousemove', e => tip.setLatLng(e.latlng));
-      layer.on('mouseout', () => {
-        map.removeLayer(tip);
-        layer.setStyle(layer.defaultStyle);
-      });
-      layer.on('click', () => onMCNClick(f, layer));
-    }
+	function attachPCHandlers(f, layer) {
+	  layer.defaultStyle = {
+		color: 'white', weight: 1, fillOpacity: 1,
+		fillColor: baseColors[f.properties.has_mcn]
+	  };
+	  layer.setStyle(layer.defaultStyle);
+
+	  let tooltip;
+	  if (!isTouchDevice) {
+		tooltip = L.tooltip({ direction: 'top', className: 'leaflet-tooltip-custom' })
+					 .setContent(f.properties.PCON24NM);
+
+		layer.on('mouseover', e => {
+		  tooltip.setLatLng(e.latlng).addTo(map);
+		  layer.setStyle({ ...layer.defaultStyle, fillColor: highlightColors[f.properties.has_mcn] });
+		});
+		layer.on('mousemove', e => tooltip.setLatLng(e.latlng));
+		layer.on('mouseout', () => {
+		  map.removeLayer(tooltip);
+		  layer.setStyle(layer.defaultStyle);
+		});
+	  }
+
+	  // This should always be registered, regardless of touch support
+	  layer.on('click', () => onPCClick(f, layer));
+	}
+
+	function attachMCNHandlers(f, layer) {
+	  layer.defaultStyle = {
+		color: 'black', weight: 1,
+		fillColor: '#FF4A47', fillOpacity: 1
+	  };
+	  layer.setStyle(layer.defaultStyle);
+
+	  let tooltip;
+	  if (!isTouchDevice) {
+		tooltip = L.tooltip({ direction: 'top', className: 'leaflet-tooltip-custom' })
+					 .setContent(f.properties["LSOA (2021) name"]);
+
+		layer.on('mouseover', e => {
+		  tooltip.setLatLng(e.latlng).addTo(map);
+		  layer.setStyle({ ...layer.defaultStyle, fillColor: '#FF9B99' });
+		});
+		layer.on('mousemove', e => tooltip.setLatLng(e.latlng));
+		layer.on('mouseout', () => {
+		  map.removeLayer(tooltip);
+		  layer.setStyle(layer.defaultStyle);
+		});
+	  }
+
+	  // Always allow click selection
+	  layer.on('click', () => onMCNClick(f, layer));
+	}
 
     // Legend
     const LegendControl = L.Control.extend({
