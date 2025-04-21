@@ -215,7 +215,9 @@
       clearMCNLayer();
       selectedConstituencyName = '';
       lsoaSelected = false;
-      if (reset) map.setZoom(9);
+	  if (reset && map.getZoom() > 9) {
+		map.setZoom(9);
+	  }
       metadataDiv.innerHTML = '<em>Select a constituency with MCNs</em>';
     }
 
