@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <title>Interactive PCs & MCN LSOAs — Unified Metadata Box</title>
@@ -94,12 +94,12 @@
       margin-right: 8px;
       flex-shrink: 0;
     }
-	@media (max-width: 600px) {
-	  #metadata {
-		  bottom: 20px; 
-	  }
-	}
-	
+
+    @media (max-width: 500px) {
+      #metadata {
+        bottom: 20px; 
+      }
+    }
   </style>
 </head>
 <body>
@@ -187,7 +187,7 @@
       metadataDiv.innerHTML = '<em>Select a constituency with MCNs</em>';
     }
 
-    // When you click a PC
+    // Feature handlers
     function onPCClick(feature, layer) {
       if (!feature.properties.has_mcn) return;
 
@@ -196,7 +196,6 @@
 
       clearAllSelections();
       selectedConstituencyName = feature.properties.PCON24NM;
-      // Show name + italic instruction
       metadataDiv.innerHTML =
         `<strong>${selectedConstituencyName}</strong><br>` +
         `<em>Select an MCN for more details</em>`;
@@ -280,7 +279,6 @@
       layer.on('click', () => onMCNClick(feature, layer));
     }
 
-    // Legend control
     const LegendControl = L.Control.extend({
       options: { position: 'topright' },
       onAdd: function(map) {
@@ -303,14 +301,14 @@
       }
     });
 
-    // Initialization
     function setupKeyHandler() {
       document.addEventListener('keydown', e => {
         if (e.key === 'Escape') {
           if (lsoaSelected) {
             lsoaHighlightLayer.clearLayers();
-            metadataDiv.innerHTML = `<strong>${selectedConstituencyName}</strong><br>` +
-			`<em>Select an MCN for more details</em>`;
+            metadataDiv.innerHTML =
+              `<strong>${selectedConstituencyName}</strong><br>` +
+              `<em>Select an MCN for more details</em>`;
             lsoaSelected = false;
           } else if (selectedConstituencyName) {
             clearAllSelections(true);
@@ -336,33 +334,18 @@
       );
 
       highlightLayer = L.geoJSON(null, {
-        style: f => ({
-          color: 'white', weight: 1, fillOpacity: 1,
-          fillColor: highlightColors[f.properties.has_mcn]
-        })
+        style: f => ({ color: 'white', weight: 1, fillOpacity: 1, fillColor: highlightColors[f.properties.has_mcn] })
       }).addTo(map);
 
       lsoaHighlightLayer = L.geoJSON(null, {
-        style: {
-          color: 'black',
-          weight: 1,
-          fillColor: '#FF9B99',
-          fillOpacity: 1
-        }
+        style: { color: 'black', weight: 1, fillColor: '#FF9B99', fillOpacity: 1 }
       }).addTo(map);
 
-      mcnLayer = L.geoJSON(null, {
-        onEachFeature: attachMCNHandlers
-      }).addTo(map);
+      mcnLayer = L.geoJSON(null, { onEachFeature: attachMCNHandlers }).addTo(map);
+      pcLayer = L.geoJSON(null, { onEachFeature: attachPCHandlers }).addTo(map);
 
-      pcLayer = L.geoJSON(null, {
-        onEachFeature: attachPCHandlers
-      }).addTo(map);
-
-      // add legend
       map.addControl(new LegendControl());
 
-      // initial instruction
       metadataDiv.innerHTML = '<em>Select a constituency with MCNs</em>';
     }
 
