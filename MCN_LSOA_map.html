@@ -23,8 +23,18 @@
 	  #map {
 		position: absolute;
 		top: 0; left: 0; right: 0; bottom: 0;
-	  }
-
+	  }	  
+	  #metadata .metadata-close-btn {
+		position: absolute;
+		top: 8px;
+		right: 8px;
+		background: transparent;
+		border: none;
+		font-size: 1.2em;
+		line-height: 1;
+		cursor: pointer;
+		color: #103a5e;	
+	  } 
 	  /* 3. Metadata box (bottom‑left) */
 	  #metadata {
 		position: absolute;
@@ -97,7 +107,6 @@
 		flex-shrink: 0;
 	  }
 
-	  /* 6. Nudge metadata up on small screens */
 	  @media (max-width: 600px) {
 		#metadata {
 		  bottom: 20px;
@@ -125,11 +134,28 @@
       return isNaN(n) ? '' : n.toFixed(2);
     }
 
-    function updateMetadataTable(props) {
-      metadataDiv.innerHTML = '';
-      const header = document.createElement('div');
-      header.innerHTML = `<strong>${selectedConstituencyName}</strong><br>${props["LSOA (2021) name"]}`;
-      metadataDiv.appendChild(header);
+	function updateMetadataTable(props) {
+	  // clear out whatever was there
+	  metadataDiv.innerHTML = '';
+
+	  // only show close when an LSOA is active
+	  const closeBtn = document.createElement('button');
+	  closeBtn.className = 'metadata-close-btn';
+	  closeBtn.innerHTML = '&times;';
+	  closeBtn.addEventListener('click', () => {
+		// exactly the same logic as “Escape” when lsoaSelected===true
+		lsoaHighlightLayer.clearLayers();
+		metadataDiv.innerHTML =
+		  `<strong>${selectedConstituencyName}</strong><br>` +
+		  `<em>Select an MCN for more details</em>`;
+		lsoaSelected = false;
+	  });
+	  metadataDiv.appendChild(closeBtn);
+
+	  // now build the usual header + table…
+	  const header = document.createElement('div');
+	  header.innerHTML = `<strong>${selectedConstituencyName}</strong><br>${props["LSOA (2021) name"]}`;
+	  metadataDiv.appendChild(header);
 
       const metadataMap = [
         ["Hyper local need measure",  "Hyper-local need measure score (where higher score = higher need)",  "Hyper-local need measure Rank (where 1 = highest need)"],
